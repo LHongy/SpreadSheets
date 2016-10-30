@@ -1,0 +1,94 @@
+// Basic model for a spreadsheet.
+public class Spreadsheet{
+    
+    // Construct a new empty spreadsheet
+    public Spreadsheet() {
+        
+    }
+    
+    // Return a string representation of the spreadsheet. This should
+    // show a table of the cells ids, values, and contents along with
+    // the upstream and downstream links between cells. Ensure that
+    // StringBuilder and iterators over various maps are used to
+    // efficiently construct the string. The expected format is as
+    // follows.
+    //
+    //     ID |  Value | Contents
+    // -------+--------+---------------
+    //     A1 |    5.0 | '5'
+    //     D1 |    4.0 | '=4'
+    //     C1 |  178.0 | '=22*A1 + 17*D1'
+    //     B1 |     hi | 'hi'
+    // 
+    // Cell Dependencies
+    // Upstream Links:
+    //   C1 : [A1, D1]
+    // Downstream Links:
+    //   A1 : [C1]
+    //   D1 : [C1]
+    //
+    public String toString() {
+        return null;
+    }
+    
+    // Produce a saveable string of the spreadsheet. A reasonable format
+    // is each cell id and its contents on a line.  You may choose
+    // whatever format you like so long as the spreadsheet can be
+    // completely recreated using the fromSaveString(s) method.
+    public String toSaveString() {
+        return null;
+    }
+    
+    // Load a spreadsheet from the given save string. Typical
+    // implementations will creat an empty spreadsheet and repeatedly
+    // read input from the provided string setting cells based on the
+    // contents read.
+    public static Spreadsheet fromSaveString(String s) {
+        return null;
+    }
+    
+    // Check if a cell ID is well formatted.  It must match the regular
+    // expression
+    // 
+    //  ^[A-Z]+[1-9][0-9]*$
+    // 
+    // to be well formatted. If the ID is not formatted correctly, throw
+    // a RuntimeException.  The str.matches(..) method is useful for
+    // this method.
+    public static void verifyIDFormat(String id) {
+        
+    }
+    
+    // Retrive a string which should be displayed for the value of the
+    // cell with the given ID. Return "" if the specified cell is empty.
+    public String getCellDisplayString(String id) {
+        return null;
+    }
+    
+    // Retrive a string which is the actual contents of the cell with
+    // the given ID. Return "" if the specified cell is empty.
+    public String getCellContents(String id) {
+        return null;
+    }
+    
+    // Delete the contents of the cell with the given ID. Update all
+    // downstream cells of the change. If specified cell is empty, do
+    // nothing.
+    public void deleteCell(String id) {
+        
+    }
+    
+    // Set the given cell with the given contents. If contents is "" or
+    // null, delete the cell indicated.
+    public void setCell(String id, String contents) {
+        
+    }
+    
+    // Notify all downstream cells of a change in the given cell.
+    // Recursively notify subsequent cells. Guaranteed to terminate so
+    // long as there are no cycles in cell dependencies.
+    public void notifyDownstreamOfChange(String id) {
+        
+    }
+    
+}
