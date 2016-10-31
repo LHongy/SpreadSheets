@@ -23,6 +23,12 @@ import java.util.Set;
 // differnt kinds of cells.
 public class Cell {
     
+    private String kind;
+    
+    private Cell(String kind) {
+        this.kind = kind;
+    }
+    
     // Factory method to create cells with the given contents linked to
     // the given spreadsheet.  The method is static so that one invokes it with:
     // 
@@ -42,14 +48,25 @@ public class Cell {
     // cell.isError() == true and displayString() == "ERROR" and
     // cell.numberValue() == null.
     public static Cell make(String contents) {
-        
-        return null;
+        String trimContents = contents.trim();
+        String kind = "";
+        try {
+            Double.parseDouble(trimContents);
+            kind = "number";
+        } catch(Exception e){
+            if(trimContents.charAt(0) == '=') {
+                kind = "formula";
+            } else {
+                kind = "string";
+            }
+        }
+        return new Cell(kind);
     }
     
     // Return the kind of the cell which is one of "string", "number",
     // or "formula".
     public String kind() {
-        return null;
+        return kind;
     }
     
     // Returns whether the cell is currently in an error state. Cells
