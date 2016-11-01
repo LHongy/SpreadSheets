@@ -1,5 +1,6 @@
 import java.util.Map;
 import java.util.Set;
+import java.util.HashSet;
 
 // Spreadsheet Cells can be one of three different kinds:
 // - Formulas always start with the = sign.  If the 0th character in
@@ -28,8 +29,14 @@ public class Cell {
     private Double numberValue;
     private String displayString;
     private String trimContents;
-        
-    private Cell(String kind, boolean isError, Double numberValue, String displayString, String trimContents) {
+    
+    private Set<String> UpstreamIDs = new HashSet<String>();
+    private Map<String,Cell> cellMap;
+    
+    private FNode treeNode;
+    
+    private Cell(String kind, boolean isError, Double numberValue, 
+                 String displayString, String trimContents) {
         this.kind = kind;
         this.isError = isError;
         this.numberValue = numberValue;
@@ -63,30 +70,37 @@ public class Cell {
         if(contents == null) {
             return null;
         }
-        trimContents = contents.trim();
-        if(trimContents.equal("")) {
+        String trimContents = contents.trim();
+        if(trimContents.equals("")) {
             return null;
         }
         
         String kind = "";
+        String displayString = "";
         boolean isError = false;
         Double numberValue = null;
+        FNode treeNode = null;
         try {
             double value = Double.parseDouble(trimContents);
             kind = "number";
             numberValue = new Double(value);
-            displayString = trimContents;
+            displayString = String.format("%.1f", numberValue);
         } catch(Exception e){
             if(trimContents.charAt(0) == '=') {
                 kind = "formula";
                 isError = true;
                 displayString = "ERROR";
+             //   treeNode = FNode.parseFormulaString(trimContents);
             } else {
                 kind = "string";
                 displayString = trimContents;
             }
         }
-        return new Cell(kind, isError, numberValue, displayString, trimContents);
+        
+        Cell cell = new Cell(kind, isError, numberValue, displayString, trimContents);
+     //   cell.treeNode = treeNode;
+     //   cell.postOrderEval(cell.treeNode, null);
+        return cell;
     }
     
     // Return the kind of the cell which is one of "string", "number",
@@ -157,7 +171,10 @@ public class Cell {
     //   O(T) for "formula" nodes where T is the number of nodes in the
     //        formula tree
     public void updateValue(Map<String,Cell> cellMap) {
-        
+        if(kind.equals("formula")) {
+            treeNode = FNode.parseFormulaString(trimContents);
+            
+        }
     }
     
     // A simple class to reflect problems evaluating a formula tree.
@@ -187,7 +204,24 @@ public class Cell {
     // Target Complexity: O(T) 
     //   T: the number of nodes in the formula tree
     public static Double evalFormulaTree(FNode node, Map<String,Cell> cellMap) {
+        Cell cell = cellMap.get(node.data);
+        cell.postOrderEval(node, cellMap);
+        //cellMap.get();
         return null;
+    }
+    
+    private double postOrderEval(FNode node, Map<String,Cell> cellMap) {
+        if(node == null) {
+            return 0;
+        }
+        postOrderEval(node.left, cellMap);
+        postOrderEval(node.right, cellMap);
+        if(node.type.equals(TokenType.CellID)) {
+            UpstreamIDs.add(node.data);
+        }
+        
+        return 0;
+        
     }
     
     // Return a set of upstream cells from this cell. Cells of kind
@@ -201,7 +235,7 @@ public class Cell {
     // Avoid repeated formula evaluation by traversing the formula tree
     // only in updateFormulaValue()
     public Set<String> getUpstreamIDs() {
-        return null;
+        return UpstreamIDs;
     }
     
 }
