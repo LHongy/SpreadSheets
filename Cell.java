@@ -24,9 +24,21 @@ import java.util.Set;
 public class Cell {
     
     private String kind;
-    
-    private Cell(String kind) {
+    private boolean isError;
+    private Double numberValue;
+    private String displayString;
+    private String trimContents;
+        
+    private Cell(String kind, boolean isError, Double numberValue, String displayString, String trimContents) {
         this.kind = kind;
+        this.isError = isError;
+        this.numberValue = numberValue;
+        this.displayString = displayString;
+        this.trimContents = trimContents;
+    }
+    
+    public static void main(String args[]){ 
+        
     }
     
     // Factory method to create cells with the given contents linked to
@@ -48,19 +60,33 @@ public class Cell {
     // cell.isError() == true and displayString() == "ERROR" and
     // cell.numberValue() == null.
     public static Cell make(String contents) {
-        String trimContents = contents.trim();
+        if(contents == null) {
+            return null;
+        }
+        trimContents = contents.trim();
+        if(trimContents.equal("")) {
+            return null;
+        }
+        
         String kind = "";
+        boolean isError = false;
+        Double numberValue = null;
         try {
-            Double.parseDouble(trimContents);
+            double value = Double.parseDouble(trimContents);
             kind = "number";
+            numberValue = new Double(value);
+            displayString = trimContents;
         } catch(Exception e){
             if(trimContents.charAt(0) == '=') {
                 kind = "formula";
+                isError = true;
+                displayString = "ERROR";
             } else {
                 kind = "string";
+                displayString = trimContents;
             }
         }
-        return new Cell(kind);
+        return new Cell(kind, isError, numberValue, displayString, trimContents);
     }
     
     // Return the kind of the cell which is one of "string", "number",
@@ -75,7 +101,7 @@ public class Cell {
     // which are blank or have kind "string" and therefore cannot be
     // used to calculate the value of the cell.
     public boolean isError() {
-        return false;
+        return isError;
     }
     
     // Produce a string to display the contents of the cell.  For kind()
@@ -89,7 +115,7 @@ public class Cell {
     // Avoid repeated formula evaluation by traversing the formula tree
     // only in updateFormulaValue()
     public String displayString() {
-        return null;
+        return displayString;
     }
     
     // Return the numeric value of this cell.  If the cell is kind
@@ -101,7 +127,7 @@ public class Cell {
     // Avoid repeated formula evaluation by traversing the formula tree
     // only in updateFormulaValue()
     public Double numberValue() {
-        return null;
+        return numberValue;
     }
     
     // Return the raw contents of the cell. For kind() "number" and
@@ -110,7 +136,7 @@ public class Cell {
     //
     // Target Complexity: O(1)
     public String contents() {
-        return null;   
+        return trimContents;   
     }
     
     // Update the value of the cell value. If the cell is not a formula
