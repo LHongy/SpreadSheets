@@ -100,7 +100,6 @@ public class Cell {
         
         Cell cell = new Cell(kind, isError, numberValue, displayString, trimContents);
         cell.treeNode = treeNode;
-     //   cell.postOrderEval(cell.treeNode, null);
         return cell;
     }
     
@@ -172,9 +171,16 @@ public class Cell {
     //   O(T) for "formula" nodes where T is the number of nodes in the
     //        formula tree
     public void updateValue(Map<String,Cell> cellMap) {
-        if(kind.equals("formula")) {
-            treeNode = FNode.parseFormulaString(trimContents);
-            
+        try {
+            if(kind.equals("formula")) {
+                numberValue = evalFormulaTree(treeNode, cellMap);
+                displayString = String.format("%.1f", numberValue);
+                isError = false;
+            }
+        } catch(EvalFormulaException e) {
+            displayString = "ERROR";
+            isError = true;
+            numberValue = null;
         }
     }
     
@@ -222,12 +228,15 @@ public class Cell {
             return -evalFormulaTree(node.left, cellMap);
         } else if(node.type.equals(TokenType.CellID)) {
             Cell cell = cellMap.get(node.data);
-            if(cell.kind().equals("formula") /*&& !cell.isError()  Have to wait, have not done properly change isError value*/ ) {
+            if(cell == null) {
+                throw new EvalFormulaException("The cell is blank");
+            }
+            if(cell.kind().equals("formula") && !cell.isError()) {
                 return evalFormulaTree(cell.treeNode, cellMap);
             } else if(cell.kind().equals("number")) {
                 return cell.numberValue();
             } else {
-                throw new EvalFormulaException("Cell unusable(blank, error, string)");
+                throw new EvalFormulaException("Cell unusable(error, string)");
             }
         } else if(node.type.equals(TokenType.Number)) {
             return Double.parseDouble(node.data);
