@@ -1,6 +1,7 @@
 import java.util.Map;
 import java.util.Set;
 import java.util.HashSet;
+import java.util.HashMap;
 
 // Spreadsheet Cells can be one of three different kinds:
 // - Formulas always start with the = sign.  If the 0th character in
@@ -30,8 +31,8 @@ public class Cell {
     private String displayString;
     private String trimContents;
     
-    private Set<String> UpstreamIDs = new HashSet<String>();
-    private Map<String,Cell> cellMap;
+    private Set<String> upstreamIDs = new HashSet<>();
+    private Map<String,Cell> cellMap = new HashMap<>();
     
     private FNode treeNode;
     
@@ -90,7 +91,7 @@ public class Cell {
                 kind = "formula";
                 isError = true;
                 displayString = "ERROR";
-             //   treeNode = FNode.parseFormulaString(trimContents);
+                treeNode = FNode.parseFormulaString(trimContents);
             } else {
                 kind = "string";
                 displayString = trimContents;
@@ -98,7 +99,7 @@ public class Cell {
         }
         
         Cell cell = new Cell(kind, isError, numberValue, displayString, trimContents);
-     //   cell.treeNode = treeNode;
+        cell.treeNode = treeNode;
      //   cell.postOrderEval(cell.treeNode, null);
         return cell;
     }
@@ -181,7 +182,7 @@ public class Cell {
     public static class EvalFormulaException extends RuntimeException{
         
         public EvalFormulaException(String msg) {
-            
+            super(msg);
         }
         
     }
@@ -204,24 +205,35 @@ public class Cell {
     // Target Complexity: O(T) 
     //   T: the number of nodes in the formula tree
     public static Double evalFormulaTree(FNode node, Map<String,Cell> cellMap) {
-        Cell cell = cellMap.get(node.data);
-        cell.postOrderEval(node, cellMap);
-        //cellMap.get();
-        return null;
-    }
-    
-    private double postOrderEval(FNode node, Map<String,Cell> cellMap) {
         if(node == null) {
-            return 0;
-        }
-        postOrderEval(node.left, cellMap);
-        postOrderEval(node.right, cellMap);
-        if(node.type.equals(TokenType.CellID)) {
-            UpstreamIDs.add(node.data);
+            return 0.0;
         }
         
-        return 0;
-        
+        if(node.type.equals(TokenType.Plus)) {
+            return evalFormulaTree(node.left, cellMap) + evalFormulaTree(node.right, cellMap);
+        } else if(node.type.equals(TokenType.Minus)) {
+            return evalFormulaTree(node.left, cellMap) - evalFormulaTree(node.right, cellMap);
+        } else if(node.type.equals(TokenType.Multiply)) {
+            return evalFormulaTree(node.left, cellMap) * evalFormulaTree(node.right, cellMap);
+        } else if(node.type.equals(TokenType.Divide)) {
+            return evalFormulaTree(node.left, cellMap) / evalFormulaTree(node.right, cellMap);
+        } else if(node.type.equals(TokenType.Negate)) {
+          //  return evalFormulaTree(node.left, cellMap) - evalFormulaTree(node.right, cellMap);
+            return -evalFormulaTree(node.left, cellMap);
+        } else if(node.type.equals(TokenType.CellID)) {
+            Cell cell = cellMap.get(node.data);
+            if(cell.kind().equals("formula") /*&& !cell.isError()  Have to wait, have not done properly change isError value*/ ) {
+                return evalFormulaTree(cell.treeNode, cellMap);
+            } else if(cell.kind().equals("number")) {
+                return cell.numberValue();
+            } else {
+                throw new EvalFormulaException("Cell unusable(blank, error, string)");
+            }
+        } else if(node.type.equals(TokenType.Number)) {
+            return Double.parseDouble(node.data);
+        } else {
+            throw new RuntimeException("How did this happen!?"); 
+        }
     }
     
     // Return a set of upstream cells from this cell. Cells of kind
@@ -235,7 +247,21 @@ public class Cell {
     // Avoid repeated formula evaluation by traversing the formula tree
     // only in updateFormulaValue()
     public Set<String> getUpstreamIDs() {
-        return UpstreamIDs;
+        postOrder(treeNode);
+        return upstreamIDs;
     }
     
+    // A recursive helper method to traverse the formula tree
+    // in postOrder and accumulate a set of ids in the formula tree.
+    private void postOrder(FNode node) {
+        if(node == null) {
+            return;
+        }
+        postOrder(node.left);
+        postOrder(node.right);
+        if(node.type.equals(TokenType.CellID)) {
+            // Add to upStreamIDs if the node's data is a cell ID
+            upstreamIDs.add(node.data);
+        }
+    }
 }
