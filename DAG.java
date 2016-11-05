@@ -1,12 +1,17 @@
 import java.util.Map;
 import java.util.Set;
 import java.util.List;
+import java.util.HashMap;
+import java.util.Iterator;
 
 public class DAG{
     
+    private Map<String, Set<String>> upstreamLinksMap;
+    private Map<String, Set<String>> downstreamLinksMap;
     // Construct an empty DAG
     public DAG() {
-        
+        upstreamLinksMap = new HashMap<>();
+        downstreamLinksMap = new HashMap<>();
     }
     
     // Produce a string representaton of the DAG which shows the
@@ -33,7 +38,7 @@ public class DAG{
     //
     // TARGET COMPLEXITY: O(1)
     public Set<String> getUpstreamLinks(String id) {
-        return null;
+        return upstreamLinksMap.get(id);
     }
     
     // Return the downstream links associated with the given ID.  If
@@ -41,7 +46,7 @@ public class DAG{
     //
     // TARGET COMPLEXITY: O(1)
     public Set<String> getDownstreamLinks(String id) {
-        return null;
+        return downstreamLinksMap.get(id);
     }
     
     // Class representing a cycle that is detected on adding to the
@@ -49,7 +54,7 @@ public class DAG{
     public static class CycleException extends RuntimeException{
         
         public CycleException(String msg) {
-            
+            super(msg);
         }
         
     }
@@ -91,6 +96,24 @@ public class DAG{
     // curPath to the new node being added and use the upstream links as
     // the links passed in.
     public static boolean checkForCycles(Map<String, Set<String>> links, List<String> curPath) {
+        String lastNode = curPath.get(curPath.size() - 1);
+        Set<String> neighbors = links.get(lastNode);
+        if(neighbors == null) {
+            return false;
+        }
+        Iterator<String> iterator = neighbors.iterator();
+        while(iterator.hasNext()) {
+            String NID = iterator.next();
+            curPath.add(NID);
+            if(curPath.get(0).equals(NID)) {
+                return true;
+            }
+            boolean result = checkForCycles(links, curPath);
+            if(result) {
+                return true;
+            }
+            curPath.remove(curPath.size() - 1);
+        }
         return false;
     }
     

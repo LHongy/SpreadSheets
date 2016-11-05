@@ -1,7 +1,6 @@
 import java.util.Map;
 import java.util.Set;
 import java.util.HashSet;
-import java.util.HashMap;
 
 // Spreadsheet Cells can be one of three different kinds:
 // - Formulas always start with the = sign.  If the 0th character in
@@ -31,9 +30,7 @@ public class Cell {
     private String displayString;
     private String trimContents;
     
-    private Set<String> upstreamIDs = new HashSet<>();
-    private Map<String,Cell> cellMap = new HashMap<>();
-    
+    private Set<String> upstreamIDs;
     private FNode treeNode;
     
     private Cell(String kind, boolean isError, Double numberValue, 
@@ -43,6 +40,7 @@ public class Cell {
         this.numberValue = numberValue;
         this.displayString = displayString;
         this.trimContents = trimContents;
+        this.upstreamIDs = new HashSet<>();
     }
     
     public static void main(String args[]){ 
@@ -178,9 +176,9 @@ public class Cell {
                 isError = false;
             }
         } catch(EvalFormulaException e) {
+            numberValue = null;
             displayString = "ERROR";
             isError = true;
-            numberValue = null;
         }
     }
     
@@ -224,7 +222,6 @@ public class Cell {
         } else if(node.type.equals(TokenType.Divide)) {
             return evalFormulaTree(node.left, cellMap) / evalFormulaTree(node.right, cellMap);
         } else if(node.type.equals(TokenType.Negate)) {
-          //  return evalFormulaTree(node.left, cellMap) - evalFormulaTree(node.right, cellMap);
             return -evalFormulaTree(node.left, cellMap);
         } else if(node.type.equals(TokenType.CellID)) {
             Cell cell = cellMap.get(node.data);
