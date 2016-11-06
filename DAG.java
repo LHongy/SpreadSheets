@@ -1,7 +1,9 @@
 import java.util.Map;
 import java.util.Set;
 import java.util.List;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 
 public class DAG{
@@ -30,7 +32,28 @@ public class DAG{
     // RU37 : [BB8]
     //   C1 : [A1, BB8]
     public String toString() {
-        return null;
+        StringBuilder builder = new StringBuilder();
+        builder.append("UpStream Links:\n");
+        Set<Map.Entry<String, Set<String>>> upstreamSet = upstreamLinksMap.entrySet(); // get a set from the map
+        Iterator<Map.Entry<String, Set<String>>> upstreamIterator = upstreamSet.iterator(); // this set contains keys and values
+        while(upstreamIterator.hasNext()) {
+            Map.Entry<String, Set<String>> upstreamMapEntry = upstreamIterator.next();
+            builder.append(String.format("%4s",upstreamMapEntry.getKey()) + " : ");
+            builder.append(upstreamMapEntry.getValue());
+            builder.append("\n");
+        }
+        
+        builder.append("Downstream Links:\n");
+        Set<Map.Entry<String, Set<String>>> downstreamSet = downstreamLinksMap.entrySet(); // get a set from the map
+        Iterator<Map.Entry<String, Set<String>>> downstreamIterator = downstreamSet.iterator(); // this set contains keys and values
+        while(downstreamIterator.hasNext()) {
+            Map.Entry<String, Set<String>> downstreamMapEntry = downstreamIterator.next();
+            builder.append(String.format("%4s",downstreamMapEntry.getKey()) + " : ");
+            builder.append(downstreamMapEntry.getValue());
+            builder.append("\n");
+        }
+        //String.format("%4s",str)
+        return builder.toString();
     }
     
     // Return the upstream links associated with the given ID.  If there
@@ -38,6 +61,9 @@ public class DAG{
     //
     // TARGET COMPLEXITY: O(1)
     public Set<String> getUpstreamLinks(String id) {
+        if(upstreamLinksMap.get(id) == null) {
+            upstreamLinksMap.put(id, new HashSet<String>());
+        }
         return upstreamLinksMap.get(id);
     }
     
@@ -46,6 +72,9 @@ public class DAG{
     //
     // TARGET COMPLEXITY: O(1)
     public Set<String> getDownstreamLinks(String id) {
+        if(downstreamLinksMap.get(id) == null) {
+            downstreamLinksMap.put(id, new HashSet<String>());
+        }
         return downstreamLinksMap.get(id);
     }
     
@@ -76,7 +105,43 @@ public class DAG{
     //   L : number of upstream links in the DAG
     //   P : longest path in the DAG starting from node id
     public void add(String id, Set<String> upstreamIDs) {
+        Map<String, Set<String>> tempUpstreamMap = new HashMap<>();
+        Map<String, Set<String>> tempDownstreamMap = new HashMap<>();
+        tempUpstreamMap.putAll(upstreamLinksMap); // Copy of original upstreamLinksMap before adding
+        tempDownstreamMap.putAll(downstreamLinksMap); // Copy of original downstreamLinksMap before adding
         
+        // remove id in any case
+        remove(id);
+        //System.out.println(upstreamIDs.size());
+        if(upstreamIDs == null || upstreamIDs.size() == 0) {
+            return;
+        }
+        // Add id and its upstreamIDs to the upstreamLinksMap
+        upstreamLinksMap.put(id, upstreamIDs);
+        Iterator<String> iterator = upstreamIDs.iterator();
+        // Add the new node to the downstream links of each upstream node
+        while(iterator.hasNext()) {
+            String oneUpstreamLink = iterator.next();
+            Set<String> downstreamLinks = getDownstreamLinks(oneUpstreamLink);
+            downstreamLinks.add(id);
+        }
+        
+        // The search is started at a designated node, usually the new node which is added
+        // So we add the new node to the path as first element,
+        // and start searching if there is a cycle
+        List<String> path = new ArrayList<>();
+        path.add(id);
+        boolean cycle = checkForCycles(upstreamLinksMap, path);
+        if(cycle) {
+            // If a cycle is created, revert the DAG back to its original form so it appears
+            // there is no change and raise a CycleException with a message
+            // showing the cycle that would have resulted from the addition.
+            upstreamLinksMap = tempUpstreamMap;
+            downstreamLinksMap = tempDownstreamMap;
+            StringBuilder builder = new StringBuilder();
+            builder.append(path);
+            throw new CycleException(builder.toString());
+        }
     }
     
     // Determine if there is a cycle in the graph represented in the
@@ -98,7 +163,7 @@ public class DAG{
     public static boolean checkForCycles(Map<String, Set<String>> links, List<String> curPath) {
         String lastNode = curPath.get(curPath.size() - 1);
         Set<String> neighbors = links.get(lastNode);
-        if(neighbors == null) {
+        if(neighbors == null || neighbors.size() == 0) {
             return false;
         }
         Iterator<String> iterator = neighbors.iterator();
@@ -125,6 +190,28 @@ public class DAG{
     //   L_i : number of upstream links node id has
     public void remove(String id) {
         
+        Set<String> upstreamLinks = getUpstreamLinks(id);
+        // System.out.println(upstreamLinks);
+        if(upstreamLinks.size() == 0) {
+            // eliminating the given id's upstream links
+            upstreamLinksMap.remove(id);
+            // If the ID has
+            // no upstream dependencies, do nothing.
+            return;
+        }
+        Iterator<String> iterator = upstreamLinks.iterator();
+        while(iterator.hasNext()) {
+            // eliminating the given id from the downstream links
+            // of other ids
+            String oneUpstreamLink = iterator.next();
+            Set<String> downstreamLinks = getDownstreamLinks(oneUpstreamLink);
+            downstreamLinks.remove(id);
+            if(downstreamLinks.size() == 0) {
+                downstreamLinksMap.remove(oneUpstreamLink);
+            }
+        }
+        // eliminating the given id's upstream links
+        upstreamLinksMap.remove(id);
     }
     
 }
