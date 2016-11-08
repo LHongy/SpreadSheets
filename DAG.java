@@ -110,14 +110,20 @@ public class DAG{
         tempUpstreamMap.putAll(upstreamLinksMap); // Copy of original upstreamLinksMap before adding
         tempDownstreamMap.putAll(downstreamLinksMap); // Copy of original downstreamLinksMap before adding
         
+        
         // remove id in any case
         remove(id);
+        
         //System.out.println(upstreamIDs.size());
         if(upstreamIDs == null || upstreamIDs.size() == 0) {
             return;
         }
         // Add id and its upstreamIDs to the upstreamLinksMap
         upstreamLinksMap.put(id, upstreamIDs);
+        System.out.println(tempUpstreamMap);
+        System.out.println(upstreamLinksMap);
+        System.out.println(tempDownstreamMap);
+        System.out.println(downstreamLinksMap);
         Iterator<String> iterator = upstreamIDs.iterator();
         // Add the new node to the downstream links of each upstream node
         while(iterator.hasNext()) {
@@ -133,6 +139,7 @@ public class DAG{
         path.add(id);
         boolean cycle = checkForCycles(upstreamLinksMap, path);
         if(cycle) {
+            
             // If a cycle is created, revert the DAG back to its original form so it appears
             // there is no change and raise a CycleException with a message
             // showing the cycle that would have resulted from the addition.

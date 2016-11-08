@@ -1,9 +1,17 @@
+import java.util.Map;
+import java.util.HashMap;
+import java.util.Set;
+import java.util.Iterator;
+
 // Basic model for a spreadsheet.
 public class Spreadsheet{
     
+    private Map<String, Cell> cellMap;
+    private DAG dag;
     // Construct a new empty spreadsheet
     public Spreadsheet() {
-        
+        cellMap = new HashMap<>();
+        dag = new DAG();
     }
     
     // Return a string representation of the spreadsheet. This should
@@ -56,31 +64,58 @@ public class Spreadsheet{
     // a RuntimeException.  The str.matches(..) method is useful for
     // this method.
     public static void verifyIDFormat(String id) {
-        
+        if(!id.matches("^[A-Z]+[1-9][0-9]*$")) {
+            throw new RuntimeException();
+        }
     }
     
     // Retrive a string which should be displayed for the value of the
     // cell with the given ID. Return "" if the specified cell is empty.
     public String getCellDisplayString(String id) {
-        return null;
+        Cell cell = cellMap.get(id);
+        if(cell == null) {
+            return "";
+        }
+        return cell.displayString();
     }
     
     // Retrive a string which is the actual contents of the cell with
     // the given ID. Return "" if the specified cell is empty.
     public String getCellContents(String id) {
-        return null;
+        Cell cell = cellMap.get(id);
+        if(cell == null) {
+            return "";
+        }
+        return cell.contents();
     }
     
     // Delete the contents of the cell with the given ID. Update all
     // downstream cells of the change. If specified cell is empty, do
     // nothing.
     public void deleteCell(String id) {
-        
+        cellMap.remove(id);
+        dag.remove(id);
+        notifyDownstreamOfChange(id);
     }
     
     // Set the given cell with the given contents. If contents is "" or
     // null, delete the cell indicated.
     public void setCell(String id, String contents) {
+        if(contents.length() == 0 || contents == null) {
+            deleteCell(id);
+            return;
+        }
+        cellMap.remove(id); // or deleteCell(id)?
+        Cell newCell = Cell.make(contents);
+        Set<String> upstreamIDS = newCell.getUpstreamIDs();
+        try {
+            dag.add(id, upstreamIDS);
+            cellMap.put(id, newCell);
+            newCell.updateValue(cellMap);
+            notifyDownstreamOfChange(id);
+        } catch(Exception e) {
+            // do nothing I guess
+        }
         
     }
     
@@ -88,7 +123,14 @@ public class Spreadsheet{
     // Recursively notify subsequent cells. Guaranteed to terminate so
     // long as there are no cycles in cell dependencies.
     public void notifyDownstreamOfChange(String id) {
-        
+        Set<String> downstreamLinks = dag.getDownstreamLinks(id);
+        Iterator<String> cellIDsIterator = downstreamLinks.iterator();
+        while(cellIDsIterator.hasNext()) {
+            String cellID = cellIDsIterator.next();
+            Cell cell = cellMap.get(cellID);
+            cell.updateValue(cellMap);
+            notifyDownstreamOfChange(cellID);
+        }
     }
     
 }
