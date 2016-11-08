@@ -28,18 +28,18 @@ public class Cell {
     private boolean isError;
     private Double numberValue;
     private String displayString;
-    private String trimContents;
+    private String contents;
     
     private Set<String> upstreamIDs;
     private FNode treeNode;
     
     private Cell(String kind, boolean isError, Double numberValue, 
-                 String displayString, String trimContents) {
+                 String displayString, String contents) {
         this.kind = kind;
         this.isError = isError;
         this.numberValue = numberValue;
         this.displayString = displayString;
-        this.trimContents = trimContents;
+        this.contents = contents;
         this.upstreamIDs = new HashSet<>();
     }
     
@@ -148,7 +148,7 @@ public class Cell {
     //
     // Target Complexity: O(1)
     public String contents() {
-        return trimContents;   
+        return contents;   
     }
     
     // Update the value of the cell value. If the cell is not a formula
