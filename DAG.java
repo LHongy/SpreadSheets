@@ -35,9 +35,9 @@ public class DAG{
         StringBuilder builder = new StringBuilder();
         builder.append("UpStream Links:\n");
         Set<Map.Entry<String, Set<String>>> upstreamSet = upstreamLinksMap.entrySet(); // get a set from the map
-        Iterator<Map.Entry<String, Set<String>>> upstreamIterator = upstreamSet.iterator(); // this set contains keys and values
-        while(upstreamIterator.hasNext()) {
-            Map.Entry<String, Set<String>> upstreamMapEntry = upstreamIterator.next();
+        Iterator<Map.Entry<String, Set<String>>> iterator = upstreamSet.iterator(); // this set contains keys and values
+        while(iterator.hasNext()) {
+            Map.Entry<String, Set<String>> upstreamMapEntry = iterator.next();
             builder.append(String.format("%4s",upstreamMapEntry.getKey()) + " : ");
             builder.append(upstreamMapEntry.getValue());
             builder.append("\n");
@@ -45,14 +45,13 @@ public class DAG{
         
         builder.append("Downstream Links:\n");
         Set<Map.Entry<String, Set<String>>> downstreamSet = downstreamLinksMap.entrySet(); // get a set from the map
-        Iterator<Map.Entry<String, Set<String>>> downstreamIterator = downstreamSet.iterator(); // this set contains keys and values
-        while(downstreamIterator.hasNext()) {
-            Map.Entry<String, Set<String>> downstreamMapEntry = downstreamIterator.next();
+        iterator = downstreamSet.iterator(); // this set contains keys and values
+        while(iterator.hasNext()) {
+            Map.Entry<String, Set<String>> downstreamMapEntry = iterator.next();
             builder.append(String.format("%4s",downstreamMapEntry.getKey()) + " : ");
             builder.append(downstreamMapEntry.getValue());
             builder.append("\n");
         }
-        //String.format("%4s",str)
         return builder.toString();
     }
     
@@ -105,30 +104,20 @@ public class DAG{
     //   L : number of upstream links in the DAG
     //   P : longest path in the DAG starting from node id
     public void add(String id, Set<String> upstreamIDs) {
-        Map<String, Set<String>> tempUpstreamMap = new HashMap<>();
-        Map<String, Set<String>> tempDownstreamMap = new HashMap<>();
-        tempUpstreamMap.putAll(upstreamLinksMap); // Copy of original upstreamLinksMap before adding
-        tempDownstreamMap.putAll(downstreamLinksMap); // Copy of original downstreamLinksMap before adding
-        
-        
+        Set<String> preUpstreamLinks = getUpstreamLinks(id); // get original UpstreamLinks of id
         // remove id in any case
         remove(id);
-        
-        //System.out.println(upstreamIDs.size());
         if(upstreamIDs == null || upstreamIDs.size() == 0) {
             return;
         }
         // Add id and its upstreamIDs to the upstreamLinksMap
         upstreamLinksMap.put(id, upstreamIDs);
-        System.out.println(tempUpstreamMap);
-        System.out.println(upstreamLinksMap);
-        System.out.println(tempDownstreamMap);
-        System.out.println(downstreamLinksMap);
+        
         Iterator<String> iterator = upstreamIDs.iterator();
         // Add the new node to the downstream links of each upstream node
         while(iterator.hasNext()) {
-            String oneUpstreamLink = iterator.next();
-            Set<String> downstreamLinks = getDownstreamLinks(oneUpstreamLink);
+            String oneUpstreamID = iterator.next();
+            Set<String> downstreamLinks = getDownstreamLinks(oneUpstreamID);
             downstreamLinks.add(id);
         }
         
@@ -139,12 +128,23 @@ public class DAG{
         path.add(id);
         boolean cycle = checkForCycles(upstreamLinksMap, path);
         if(cycle) {
-            
             // If a cycle is created, revert the DAG back to its original form so it appears
             // there is no change and raise a CycleException with a message
             // showing the cycle that would have resulted from the addition.
-            upstreamLinksMap = tempUpstreamMap;
-            downstreamLinksMap = tempDownstreamMap;
+            remove(id);
+            if(preUpstreamLinks.size() == 0) {
+                upstreamLinksMap.remove(id);
+            } else {
+                upstreamLinksMap.put(id, preUpstreamLinks);
+            }
+            iterator = preUpstreamLinks.iterator();
+            // Add the new node to the downstream links of each upstream node
+            while(iterator.hasNext()) {
+                String oneUpstreamID = iterator.next();
+                Set<String> downstreamLinks = getDownstreamLinks(oneUpstreamID);
+                downstreamLinks.add(id);
+            }
+            
             StringBuilder builder = new StringBuilder();
             builder.append(path);
             throw new CycleException(builder.toString());
@@ -196,7 +196,6 @@ public class DAG{
     // TARGET COMPLEXITY: O(L_i)
     //   L_i : number of upstream links node id has
     public void remove(String id) {
-        
         Set<String> upstreamLinks = getUpstreamLinks(id);
         // System.out.println(upstreamLinks);
         if(upstreamLinks.size() == 0) {
@@ -210,11 +209,11 @@ public class DAG{
         while(iterator.hasNext()) {
             // eliminating the given id from the downstream links
             // of other ids
-            String oneUpstreamLink = iterator.next();
-            Set<String> downstreamLinks = getDownstreamLinks(oneUpstreamLink);
+            String oneUpstreamID = iterator.next();
+            Set<String> downstreamLinks = getDownstreamLinks(oneUpstreamID);
             downstreamLinks.remove(id);
             if(downstreamLinks.size() == 0) {
-                downstreamLinksMap.remove(oneUpstreamLink);
+                downstreamLinksMap.remove(oneUpstreamID);
             }
         }
         // eliminating the given id's upstream links

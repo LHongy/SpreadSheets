@@ -124,9 +124,9 @@ public class Spreadsheet{
     // long as there are no cycles in cell dependencies.
     public void notifyDownstreamOfChange(String id) {
         Set<String> downstreamLinks = dag.getDownstreamLinks(id);
-        Iterator<String> cellIDsIterator = downstreamLinks.iterator();
-        while(cellIDsIterator.hasNext()) {
-            String cellID = cellIDsIterator.next();
+        Iterator<String> iterator = downstreamLinks.iterator();
+        while(iterator.hasNext()) {
+            String cellID = iterator.next();
             Cell cell = cellMap.get(cellID);
             cell.updateValue(cellMap);
             notifyDownstreamOfChange(cellID);
