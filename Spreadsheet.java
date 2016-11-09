@@ -36,7 +36,14 @@ public class Spreadsheet{
     //   D1 : [C1]
     //
     public String toString() {
-        return null;
+        String id = "ID";
+        String value = "Value";
+        String contents = "Contents";
+        
+        //  String.format("%6s |%7s | '%s'", id, value, contents);
+        StringBuilder builder = new StringBuilder();
+        builder.append("");
+        return builder.toString();
     }
     
     // Produce a saveable string of the spreadsheet. A reasonable format

@@ -249,9 +249,7 @@ public class Cell {
     // this method should call a recursive helper method to traverse the
     // formula tree and accumulate a set of ids in the formula tree.
     // 
-    // Target Complexity: O(1)
-    // Avoid repeated formula evaluation by traversing the formula tree
-    // only in updateFormulaValue()
+    // Target Complexity: O(T)
     public Set<String> getUpstreamIDs() {
         postOrder(treeNode);
         return upstreamIDs;

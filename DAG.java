@@ -197,7 +197,6 @@ public class DAG{
     //   L_i : number of upstream links node id has
     public void remove(String id) {
         Set<String> upstreamLinks = getUpstreamLinks(id);
-        // System.out.println(upstreamLinks);
         if(upstreamLinks.size() == 0) {
             // eliminating the given id's upstream links
             upstreamLinksMap.remove(id);
