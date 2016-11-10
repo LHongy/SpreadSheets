@@ -2,12 +2,14 @@ import java.util.Map;
 import java.util.HashMap;
 import java.util.Set;
 import java.util.Iterator;
+import java.util.Scanner;
 
 // Basic model for a spreadsheet.
 public class Spreadsheet{
     
     private Map<String, Cell> cellMap;
     private DAG dag;
+    
     // Construct a new empty spreadsheet
     public Spreadsheet() {
         cellMap = new HashMap<>();
@@ -62,7 +64,16 @@ public class Spreadsheet{
     // whatever format you like so long as the spreadsheet can be
     // completely recreated using the fromSaveString(s) method.
     public String toSaveString() {
-        return null;
+        StringBuilder builder = new StringBuilder();
+        Set<Map.Entry<String, Cell>> cellSet = cellMap.entrySet(); // get a set from the map
+        Iterator<Map.Entry<String, Cell>> iterator = cellSet.iterator(); // this set contains keys and values
+        while(iterator.hasNext()) {
+            Map.Entry<String, Cell> cellMapEntry = iterator.next();
+            String id = cellMapEntry.getKey();
+            String contents = getCellContents(id);
+            builder.append(String.format("%s %s\n", id, contents));
+        }
+        return builder.toString();
     }
     
     // Load a spreadsheet from the given save string. Typical
@@ -70,7 +81,14 @@ public class Spreadsheet{
     // read input from the provided string setting cells based on the
     // contents read.
     public static Spreadsheet fromSaveString(String s) {
-        return null;
+        Scanner input = new Scanner(s);
+        Spreadsheet sheet = new Spreadsheet();
+        while(input.hasNext()) {
+            String id = input.next();
+            String contents = input.nextLine();
+            sheet.setCell(id, contents);
+        } 
+        return sheet;
     }
     
     // Check if a cell ID is well formatted.  It must match the regular
