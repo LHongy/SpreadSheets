@@ -26,25 +26,22 @@ public class Cell {
     
     private String kind;
     private boolean isError;
-    private Double numberValue;
+    private Double numberValue; // numberCell and formulaCell
     private String displayString;
     private String contents;
+    private FNode treeRoot;  // formulaCell
+    private Set<String> upstreamIDs; // formulaCell
     
-    private Set<String> upstreamIDs;
-    private FNode treeNode;
-    
+    // private constrctor to create a Cell object
     private Cell(String kind, boolean isError, Double numberValue, 
-                 String displayString, String contents) {
+                 String displayString, String contents, FNode treeRoot) {
         this.kind = kind;
         this.isError = isError;
         this.numberValue = numberValue;
         this.displayString = displayString;
         this.contents = contents;
+        this.treeRoot = treeRoot;
         this.upstreamIDs = new HashSet<>();
-    }
-    
-    public static void main(String args[]){ 
-        
     }
     
     // Factory method to create cells with the given contents linked to
@@ -66,6 +63,8 @@ public class Cell {
     // cell.isError() == true and displayString() == "ERROR" and
     // cell.numberValue() == null.
     public static Cell make(String contents) {
+        // If the contents is null or
+        // empty, return null.
         if(contents == null) {
             return null;
         }
@@ -78,27 +77,32 @@ public class Cell {
         String displayString = "";
         boolean isError = false;
         Double numberValue = null;
-        FNode treeNode = null;
+        FNode treeRoot = null;
         try {
+            // if Double.parseDouble(trimContents) does not raise exception,
+            // it is a numberCell
             double value = Double.parseDouble(trimContents);
             kind = "number";
             numberValue = new Double(value);
             displayString = String.format("%.1f", numberValue);
         } catch(Exception e){
+            // if Double.parseDouble(trimContents) raise exception,
+            // if first char is =, it is formulaCell
+            // untill updateValue of this formulaCell
+            // it is in Error state
             if(trimContents.charAt(0) == '=') {
                 kind = "formula";
                 isError = true;
                 displayString = "ERROR";
-                treeNode = FNode.parseFormulaString(trimContents);
+                treeRoot = FNode.parseFormulaString(trimContents);
             } else {
+                // else it is stringCell
                 kind = "string";
                 displayString = trimContents;
             }
         }
-        
-        Cell cell = new Cell(kind, isError, numberValue, displayString, trimContents);
-        cell.treeNode = treeNode;
-        return cell;
+        return new Cell(kind, isError, numberValue,
+                        displayString, trimContents, treeRoot);
     }
     
     // Return the kind of the cell which is one of "string", "number",
@@ -171,11 +175,16 @@ public class Cell {
     public void updateValue(Map<String,Cell> cellMap) {
         try {
             if(kind.equals("formula")) {
-                numberValue = evalFormulaTree(treeNode, cellMap);
+                // if it is formulaCell,
+                // and there is no exception during 
+                // evalFormulaTree, it is no more in Error state
+                numberValue = evalFormulaTree(treeRoot, cellMap);
                 displayString = String.format("%.1f", numberValue);
                 isError = false;
             }
         } catch(EvalFormulaException e) {
+            // if exception occur during evalFormulaTree
+            // it is in Error state
             numberValue = null;
             displayString = "ERROR";
             isError = true;
@@ -210,34 +219,53 @@ public class Cell {
     //   T: the number of nodes in the formula tree
     public static Double evalFormulaTree(FNode node, Map<String,Cell> cellMap) {
         if(node == null) {
+            // If the node is null,
+            // no value is going to be added, so add 0
             return 0.0;
         }
-        
         if(node.type.equals(TokenType.Plus)) {
+            // if the node is type +, return the value of left child + the value of right child
             return evalFormulaTree(node.left, cellMap) + evalFormulaTree(node.right, cellMap);
         } else if(node.type.equals(TokenType.Minus)) {
+            // if the node is type -, return the value of left child - the value of right child
             return evalFormulaTree(node.left, cellMap) - evalFormulaTree(node.right, cellMap);
         } else if(node.type.equals(TokenType.Multiply)) {
+            // if the node is type *, return the value of left child * the value of right child
             return evalFormulaTree(node.left, cellMap) * evalFormulaTree(node.right, cellMap);
         } else if(node.type.equals(TokenType.Divide)) {
+            // if the node is type /, return the value of left child / the value of right child
             return evalFormulaTree(node.left, cellMap) / evalFormulaTree(node.right, cellMap);
         } else if(node.type.equals(TokenType.Negate)) {
+            // if the node is type negate, return the negative value of left child 
             return -evalFormulaTree(node.left, cellMap);
         } else if(node.type.equals(TokenType.CellID)) {
+            // if the node is type CellID
+            // get the cell object from cellMap using the CellID as the key
             Cell cell = cellMap.get(node.data);
             if(cell == null) {
+                // if the cell is null, we are not able to evaluate the expression
+                // throw EvalFormulaException.
                 throw new EvalFormulaException("The cell is blank");
             }
             if(cell.kind().equals("formula") && !cell.isError()) {
-                return evalFormulaTree(cell.treeNode, cellMap);
+                // if the cell is a formulaCell and not in Error state
+                // return the value of the cell
+                return evalFormulaTree(cell.treeRoot, cellMap);
             } else if(cell.kind().equals("number")) {
+                // if it is a numberCell, return its value
                 return cell.numberValue();
             } else {
+                // the cell is a whether a stringCell or 
+                // it is a formulaCell in Error state
+                // not able to evaluate the expression
+                // throw EvalFormulaException.
                 throw new EvalFormulaException("Cell unusable(error, string)");
             }
         } else if(node.type.equals(TokenType.Number)) {
+            // if the node is type number, return the value of the node
             return Double.parseDouble(node.data);
         } else {
+            // something strange happened
             throw new RuntimeException("How did this happen!?"); 
         }
     }
@@ -251,7 +279,7 @@ public class Cell {
     // 
     // Target Complexity: O(T)
     public Set<String> getUpstreamIDs() {
-        postOrder(treeNode);
+        postOrder(treeRoot); // call helper method to traverse the formula tree
         return upstreamIDs;
     }
     
@@ -261,8 +289,8 @@ public class Cell {
         if(node == null) {
             return;
         }
-        postOrder(node.left);
-        postOrder(node.right);
+        postOrder(node.left); // go to left child
+        postOrder(node.right); // go to right child
         if(node.type.equals(TokenType.CellID)) {
             // Add to upStreamIDs if the node's data is a cell ID
             upstreamIDs.add(node.data);

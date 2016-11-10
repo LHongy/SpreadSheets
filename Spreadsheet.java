@@ -155,9 +155,9 @@ public class Spreadsheet{
             newCell.updateValue(cellMap);
             notifyDownstreamOfChange(id);
         } catch(DAG.CycleException e) {
-            System.err.println(" " + e.getMessage());
+            System.err.println(" " + e.getMessage()); // need modify
         } catch(RuntimeException e) {
-            System.err.println("Cell id 'zebra' is badly formatted");
+            System.err.println("Cell id 'zebra' is badly formatted"); // need modify
         }
     }
     
