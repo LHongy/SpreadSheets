@@ -144,19 +144,21 @@ public class Spreadsheet{
             deleteCell(id);
             return;
         }
-        cellMap.remove(id); 
- //       deleteCell(id);
-        Cell newCell = Cell.make(contents);
-        Set<String> upstreamIDS = newCell.getUpstreamIDs();
         try {
+            verifyIDFormat(id);
+            cellMap.remove(id); 
+            //  deleteCell(id);
+            Cell newCell = Cell.make(contents);
+            Set<String> upstreamIDS = newCell.getUpstreamIDs();
             dag.add(id, upstreamIDS);
             cellMap.put(id, newCell);
             newCell.updateValue(cellMap);
             notifyDownstreamOfChange(id);
-        } catch(Exception e) {
-            // do nothing I guess
+        } catch(DAG.CycleException e) {
+            System.err.println(" " + e.getMessage());
+        } catch(RuntimeException e) {
+            System.err.println("Cell id 'zebra' is badly formatted");
         }
-        
     }
     
     // Notify all downstream cells of a change in the given cell.
