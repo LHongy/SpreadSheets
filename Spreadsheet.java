@@ -40,9 +40,20 @@ public class Spreadsheet{
         String value = "Value";
         String contents = "Contents";
         
-        //  String.format("%6s |%7s | '%s'", id, value, contents);
         StringBuilder builder = new StringBuilder();
-        builder.append("");
+        builder.append(String.format("%6s |%7s | %s\n", id, value, contents));
+        builder.append("-------+--------+---------------\n");
+        Set<Map.Entry<String, Cell>> cellSet = cellMap.entrySet(); // get a set from the map
+        Iterator<Map.Entry<String, Cell>> iterator = cellSet.iterator(); // this set contains keys and values
+        while(iterator.hasNext()) {
+            Map.Entry<String, Cell> cellMapEntry = iterator.next();
+            id = cellMapEntry.getKey();
+            value = getCellDisplayString(id);
+            contents = getCellContents(id);
+            builder.append(String.format("%6s |%7s | '%s'\n", id, value, contents));
+        }
+        builder.append("\nCell Dependencies\n");
+        builder.append(dag);
         return builder.toString();
     }
     
@@ -100,6 +111,9 @@ public class Spreadsheet{
     // downstream cells of the change. If specified cell is empty, do
     // nothing.
     public void deleteCell(String id) {
+        if(cellMap.get(id) == null) {
+            return;
+        }
         cellMap.remove(id);
         dag.remove(id);
         notifyDownstreamOfChange(id);
@@ -112,7 +126,8 @@ public class Spreadsheet{
             deleteCell(id);
             return;
         }
-        cellMap.remove(id); // or deleteCell(id)?
+        cellMap.remove(id); 
+ //       deleteCell(id);
         Cell newCell = Cell.make(contents);
         Set<String> upstreamIDS = newCell.getUpstreamIDs();
         try {

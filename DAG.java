@@ -33,14 +33,16 @@ public class DAG{
     //   C1 : [A1, BB8]
     public String toString() {
         StringBuilder builder = new StringBuilder();
-        builder.append("UpStream Links:\n");
+        builder.append("Upstream Links:\n");
         Set<Map.Entry<String, Set<String>>> upstreamSet = upstreamLinksMap.entrySet(); // get a set from the map
         Iterator<Map.Entry<String, Set<String>>> iterator = upstreamSet.iterator(); // this set contains keys and values
         while(iterator.hasNext()) {
             Map.Entry<String, Set<String>> upstreamMapEntry = iterator.next();
-            builder.append(String.format("%4s",upstreamMapEntry.getKey()) + " : ");
-            builder.append(upstreamMapEntry.getValue());
-            builder.append("\n");
+            if(!upstreamMapEntry.getValue().isEmpty()) {
+                builder.append(String.format("%4s",upstreamMapEntry.getKey()) + " : ");
+                builder.append(upstreamMapEntry.getValue());
+                builder.append("\n");
+            }
         }
         
         builder.append("Downstream Links:\n");
@@ -48,9 +50,11 @@ public class DAG{
         iterator = downstreamSet.iterator(); // this set contains keys and values
         while(iterator.hasNext()) {
             Map.Entry<String, Set<String>> downstreamMapEntry = iterator.next();
-            builder.append(String.format("%4s",downstreamMapEntry.getKey()) + " : ");
-            builder.append(downstreamMapEntry.getValue());
-            builder.append("\n");
+            if(!downstreamMapEntry.getValue().isEmpty()) {
+                builder.append(String.format("%4s",downstreamMapEntry.getKey()) + " : ");
+                builder.append(downstreamMapEntry.getValue());
+                builder.append("\n");
+            }
         }
         return builder.toString();
     }
@@ -107,7 +111,7 @@ public class DAG{
         Set<String> preUpstreamLinks = getUpstreamLinks(id); // get original UpstreamLinks of id
         // remove id in any case
         remove(id);
-        if(upstreamIDs == null || upstreamIDs.size() == 0) {
+        if(upstreamIDs == null || upstreamIDs.isEmpty()) {
             return;
         }
         // Add id and its upstreamIDs to the upstreamLinksMap
@@ -132,11 +136,9 @@ public class DAG{
             // there is no change and raise a CycleException with a message
             // showing the cycle that would have resulted from the addition.
             remove(id);
-            if(preUpstreamLinks.size() == 0) {
-                upstreamLinksMap.remove(id);
-            } else {
-                upstreamLinksMap.put(id, preUpstreamLinks);
-            }
+            
+            upstreamLinksMap.put(id, preUpstreamLinks);
+            
             iterator = preUpstreamLinks.iterator();
             // Add the new node to the downstream links of each upstream node
             while(iterator.hasNext()) {
@@ -170,7 +172,7 @@ public class DAG{
     public static boolean checkForCycles(Map<String, Set<String>> links, List<String> curPath) {
         String lastNode = curPath.get(curPath.size() - 1);
         Set<String> neighbors = links.get(lastNode);
-        if(neighbors == null || neighbors.size() == 0) {
+        if(neighbors == null || neighbors.isEmpty()) {
             return false;
         }
         Iterator<String> iterator = neighbors.iterator();
@@ -197,9 +199,9 @@ public class DAG{
     //   L_i : number of upstream links node id has
     public void remove(String id) {
         Set<String> upstreamLinks = getUpstreamLinks(id);
-        if(upstreamLinks.size() == 0) {
+        if(upstreamLinks.isEmpty()) {
             // eliminating the given id's upstream links
-            upstreamLinksMap.remove(id);
+         //   upstreamLinksMap.remove(id);
             // If the ID has
             // no upstream dependencies, do nothing.
             return;
@@ -211,9 +213,6 @@ public class DAG{
             String oneUpstreamID = iterator.next();
             Set<String> downstreamLinks = getDownstreamLinks(oneUpstreamID);
             downstreamLinks.remove(id);
-            if(downstreamLinks.size() == 0) {
-                downstreamLinksMap.remove(oneUpstreamID);
-            }
         }
         // eliminating the given id's upstream links
         upstreamLinksMap.remove(id);
