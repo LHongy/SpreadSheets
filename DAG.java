@@ -135,6 +135,10 @@ public class DAG{
             // If a cycle is created, revert the DAG back to its original form so it appears
             // there is no change and raise a CycleException with a message
             // showing the cycle that would have resulted from the addition.
+            
+            // like adding the id again
+            // but with preUpstreamLinks 
+            // so that we can revert back
             remove(id);
             
             upstreamLinksMap.put(id, preUpstreamLinks);

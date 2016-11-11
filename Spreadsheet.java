@@ -49,10 +49,12 @@ public class Spreadsheet{
         Iterator<Map.Entry<String, Cell>> iterator = cellSet.iterator(); // this set contains keys and values
         while(iterator.hasNext()) {
             Map.Entry<String, Cell> cellMapEntry = iterator.next();
-            id = cellMapEntry.getKey();
-            value = getCellDisplayString(id);
-            contents = getCellContents(id);
-            builder.append(String.format("%6s |%7s | '%s'\n", id, value, contents));
+            if(cellMapEntry.getValue() != null) {
+                id = cellMapEntry.getKey();
+                value = getCellDisplayString(id);
+                contents = getCellContents(id);
+                builder.append(String.format("%6s |%7s | '%s'\n", id, value, contents));
+            }
         }
         builder.append("\nCell Dependencies\n");
         builder.append(dag);
@@ -101,7 +103,8 @@ public class Spreadsheet{
     // this method.
     public static void verifyIDFormat(String id) {
         if(!id.matches("^[A-Z]+[1-9][0-9]*$")) {
-            throw new RuntimeException();
+            throw new RuntimeException
+                (String.format("Cell id '%s' is badly formatted", id));
         }
     }
     
@@ -140,24 +143,27 @@ public class Spreadsheet{
     // Set the given cell with the given contents. If contents is "" or
     // null, delete the cell indicated.
     public void setCell(String id, String contents) {
-        if(contents.length() == 0 || contents == null) {
+        if(contents == null || contents.length() == 0) {
             deleteCell(id);
             return;
         }
+        Cell oldCell = cellMap.get(id);
+        verifyIDFormat(id);
+        cellMap.remove(id); 
+        //deleteCell(id);
+        Cell newCell = Cell.make(contents);
+        Set<String> upstreamIDS = newCell.getUpstreamIDs();
         try {
-            verifyIDFormat(id);
-            cellMap.remove(id); 
-            //  deleteCell(id);
-            Cell newCell = Cell.make(contents);
-            Set<String> upstreamIDS = newCell.getUpstreamIDs();
             dag.add(id, upstreamIDS);
             cellMap.put(id, newCell);
             newCell.updateValue(cellMap);
             notifyDownstreamOfChange(id);
         } catch(DAG.CycleException e) {
-            System.err.println(" " + e.getMessage()); // need modify
-        } catch(RuntimeException e) {
-            System.err.println("Cell id 'zebra' is badly formatted"); // need modify
+            cellMap.put(id, oldCell);
+            throw new DAG.CycleException
+                (String.format
+                     ("Cell %s with formula '%s' creates cycle: ", id, contents)
+                     + e.getMessage());
         }
     }
     
