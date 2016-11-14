@@ -266,7 +266,7 @@ public class Cell {
             return Double.parseDouble(node.data);
         } else {
             // something strange happened
-            throw new RuntimeException("How did this happen!?"); 
+            throw new RuntimeException("Something strange happened"); 
         }
     }
     

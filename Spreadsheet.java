@@ -147,10 +147,10 @@ public class Spreadsheet{
             deleteCell(id);
             return;
         }
-        Cell oldCell = cellMap.get(id);
+        // store the original state of the cell to variable oldCell
+        Cell oldCell = cellMap.get(id); 
         verifyIDFormat(id);
         cellMap.remove(id); 
-        //deleteCell(id);
         Cell newCell = Cell.make(contents);
         Set<String> upstreamIDS = newCell.getUpstreamIDs();
         try {
@@ -159,6 +159,10 @@ public class Spreadsheet{
             newCell.updateValue(cellMap);
             notifyDownstreamOfChange(id);
         } catch(DAG.CycleException e) {
+            // dag.add(id, upstreamIDS) caused a cyle in the dag
+            // setCell failed
+            // we should put the newCell back to its original state
+            // and throw a new DAG.CycleException
             cellMap.put(id, oldCell);
             throw new DAG.CycleException
                 (String.format
