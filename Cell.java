@@ -23,14 +23,17 @@ import java.util.HashSet;
 // This class may contain nested static subclasses to implement the
 // differnt kinds of cells.
 public class Cell {
-    
-    private String kind;
-    private boolean isError;
-    private Double numberValue; // numberCell and formulaCell
-    private String displayString;
-    private String contents;
-    private FNode treeRoot;  // formulaCell
-    private Set<String> upstreamIDs; // formulaCell
+ 
+    private String kind; // the kind of the cell
+    private boolean isError; // to track whether cell is in Error state
+    private Double numberValue; // numeric  value for cell of number and formula kind 
+    // Display the orginal contents for string kind, 
+    // numeric value of 1 decimal point of accuracy
+    // for number and formula kind
+    private String displayString; 
+    private String contents; // Original contents
+    private FNode treeRoot;  // Root for a formula kind cell
+    private Set<String> upstreamIDs; // a set of upstreamIDs for formula kind cell
     
     // private constrctor to create a Cell object
     private Cell(String kind, boolean isError, Double numberValue, 
@@ -73,6 +76,7 @@ public class Cell {
             return null;
         }
         
+        // variables for passing to Cell constructor
         String kind = "";
         String displayString = "";
         boolean isError = false;
@@ -81,6 +85,7 @@ public class Cell {
         try {
             // if Double.parseDouble(trimContents) does not raise exception,
             // it is a numberCell
+            // numberCells are never in Error
             double value = Double.parseDouble(trimContents);
             kind = "number";
             numberValue = new Double(value);
@@ -97,6 +102,7 @@ public class Cell {
                 treeRoot = FNode.parseFormulaString(trimContents);
             } else {
                 // else it is stringCell
+                // stringCells are never in Error
                 kind = "string";
                 displayString = trimContents;
             }
@@ -175,13 +181,15 @@ public class Cell {
     public void updateValue(Map<String,Cell> cellMap) {
         try {
             if(kind.equals("formula")) {
-                // if it is formulaCell,
-                // and there is no exception during 
+                // if it is a formulaCell, evaluate the cell
+                // and if there is no exception during 
                 // evalFormulaTree, it is no more in Error state
                 numberValue = evalFormulaTree(treeRoot, cellMap);
                 displayString = String.format("%.1f", numberValue);
                 isError = false;
             }
+            // else it is numberCell or stringCell, 
+            // do nothing
         } catch(EvalFormulaException e) {
             // if exception occur during evalFormulaTree
             // it is in Error state
