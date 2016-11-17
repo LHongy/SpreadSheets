@@ -7,8 +7,10 @@ import java.util.Scanner;
 // Basic model for a spreadsheet.
 public class Spreadsheet{
     
-    private Map<String, Cell> cellMap;
-    private DAG dag;
+    // Stores Cell IDs as keys, actual Cell Objects as values
+    private Map<String, Cell> cellMap; 
+    // For detecting cycle
+    private DAG dag; 
     
     // Construct a new empty spreadsheet
     public Spreadsheet() {
@@ -45,18 +47,22 @@ public class Spreadsheet{
         StringBuilder builder = new StringBuilder();
         builder.append(String.format("%6s |%7s | %s\n", id, value, contents));
         builder.append("-------+--------+---------------\n");
-        Set<Map.Entry<String, Cell>> cellSet = cellMap.entrySet(); // get a set from the map
-        Iterator<Map.Entry<String, Cell>> iterator = cellSet.iterator(); // this set contains keys and values
+        // get a set from cellMap that contains keys and values
+        Set<Map.Entry<String, Cell>> cellSet = cellMap.entrySet();
+        Iterator<Map.Entry<String, Cell>> iterator = cellSet.iterator();
         while(iterator.hasNext()) {
             Map.Entry<String, Cell> cellMapEntry = iterator.next();
+            // if the Cell Object with the ID exsits
             if(cellMapEntry.getValue() != null) {
                 id = cellMapEntry.getKey();
                 value = getCellDisplayString(id);
                 contents = getCellContents(id);
+                // Append ID, value, and contents in well formated string
                 builder.append(String.format("%6s |%7s | '%s'\n", id, value, contents));
             }
         }
         builder.append("\nCell Dependencies\n");
+        // Append upstreamLinks and downstreamLinks
         builder.append(dag);
         return builder.toString();
     }
@@ -67,10 +73,12 @@ public class Spreadsheet{
     // completely recreated using the fromSaveString(s) method.
     public String toSaveString() {
         StringBuilder builder = new StringBuilder();
-        Set<Map.Entry<String, Cell>> cellSet = cellMap.entrySet(); // get a set from the map
-        Iterator<Map.Entry<String, Cell>> iterator = cellSet.iterator(); // this set contains keys and values
+        // get a set from cellMap that contains keys and values
+        Set<Map.Entry<String, Cell>> cellSet = cellMap.entrySet(); 
+        Iterator<Map.Entry<String, Cell>> iterator = cellSet.iterator();
         while(iterator.hasNext()) {
             Map.Entry<String, Cell> cellMapEntry = iterator.next();
+            // Append a Cell's ID and contents
             String id = cellMapEntry.getKey();
             String contents = getCellContents(id);
             builder.append(String.format("%s %s\n", id, contents));
@@ -86,6 +94,7 @@ public class Spreadsheet{
         Scanner input = new Scanner(s);
         Spreadsheet sheet = new Spreadsheet();
         while(input.hasNext()) {
+            // Read the ID and contents to set a Cell object
             String id = input.next();
             String contents = input.nextLine();
             sheet.setCell(id, contents);
@@ -135,6 +144,7 @@ public class Spreadsheet{
         if(cellMap.get(id) == null) {
             return;
         }
+        // Remove Cell Object from cellMap and Cell ID from dag
         cellMap.remove(id);
         dag.remove(id);
         notifyDownstreamOfChange(id);
@@ -143,18 +153,26 @@ public class Spreadsheet{
     // Set the given cell with the given contents. If contents is "" or
     // null, delete the cell indicated.
     public void setCell(String id, String contents) {
+        // If contents is "" or null, delete the cell indicated.
         if(contents == null || contents.length() == 0) {
             deleteCell(id);
             return;
         }
-        // store the original state of the cell to variable oldCell
+        
+        // store the original state of the Cell Object to variable oldCell
         Cell oldCell = cellMap.get(id); 
         verifyIDFormat(id);
+        // Delete the Cell Object that match to the CellID in cellMap
         cellMap.remove(id); 
+        // Create a new cell with contents
         Cell newCell = Cell.make(contents);
+        // Extract the upstream dependencies for the newCell 
         Set<String> upstreamIDS = newCell.getUpstreamIDs();
+        
         try {
+            // Try add newCell to dag
             dag.add(id, upstreamIDS);
+            // If successful, no cycles are created and newCell is valid
             cellMap.put(id, newCell);
             newCell.updateValue(cellMap);
             notifyDownstreamOfChange(id);
@@ -175,9 +193,12 @@ public class Spreadsheet{
     // Recursively notify subsequent cells. Guaranteed to terminate so
     // long as there are no cycles in cell dependencies.
     public void notifyDownstreamOfChange(String id) {
+        // Get the set of downstream cells
         Set<String> downstreamLinks = dag.getDownstreamLinks(id);
         Iterator<String> iterator = downstreamLinks.iterator();
         while(iterator.hasNext()) {
+            // for each downstream cell
+            // update its value and notify its downstream cells
             String cellID = iterator.next();
             Cell cell = cellMap.get(cellID);
             cell.updateValue(cellMap);

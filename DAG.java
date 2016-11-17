@@ -181,24 +181,40 @@ public class DAG{
     // curPath to the new node being added and use the upstream links as
     // the links passed in.
     public static boolean checkForCycles(Map<String, Set<String>> links, List<String> curPath) {
+        // LASTNODE = get last element from PATH
         String lastNode = curPath.get(curPath.size() - 1);
+        // NEIGHBORS = get set of neighbors associated with LASTNODE from LINKS
         Set<String> neighbors = links.get(lastNode);
+        // if NEIGHBORS is empty or null then 
+        // return false as this path has reached a dead end
         if(neighbors == null || neighbors.isEmpty()) {
             return false;
         }
+        // otherwise continue
         Iterator<String> iterator = neighbors.iterator();
+        // for every NID in NEIGHBORS
         while(iterator.hasNext()) {
             String NID = iterator.next();
+            // append NID to the end of PATH
             curPath.add(NID);
+            // if the first element in PATH equals NID then
+            // return true because PATH now contains a cycle
             if(curPath.get(0).equals(NID)) {
                 return true;
             }
-            boolean result = checkForCycles(links, curPath);
+            // otherwise continue
+            // RESULT = checkForCycles(LINKS,PATH), recursively visit the neighbor
+            boolean result = checkForCycles(links, curPath); 
+            // if RESULT is true then
+            // return true because PATH contains a cycle
             if(result) {
                 return true;
             }
+            // otherwise continue
+            // remove the last element from PATH which should be NID
             curPath.remove(curPath.size() - 1);
         }
+        // after exploring all NEIGHBORS, no cycles were found so return false
         return false;
     }
     
